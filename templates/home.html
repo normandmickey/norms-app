@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}norms-app{% endblock %}
+
+{% block content %}
+<div class="hero-card">
+  <span class="eyebrow">Built with SaaSClaw</span>
+  <h1>{{ project_name }}</h1>
+  <p class="subtitle">This Django starter is private by default and includes a cleaner app shell, admin, and login flow.</p>
+</div>
+<div class="card-grid">
+  <section class="info-card">
+    <h2>Admin</h2>
+    <p>Open the Django admin to manage users, models, and internal content.</p>
+    <a class="button" href="/admin/">Open admin</a>
+  </section>
+  <section class="info-card">
+    <h2>Session</h2>
+    <p>You are signed in. Use the logout button in the header when you are done.</p>
+  </section>
+  <section class="info-card">
+    <h2>Status</h2>
+    <p>Health endpoint is live for deploy checks and runtime verification.</p>
+    <a class="button secondary" href="/health/">View health</a>
+  </section>
+  <section class="info-card">
+    <h2>Reports</h2>
+    <p>Generate constrained AI-assisted reports and export them without exposing raw SQL in the browser.</p>
+    <a class="button secondary" href="/reports/">Open reports</a>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ chat_widget_title }}</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin:0; font-family:Inter, system-ui, sans-serif; background:{% if embedded %}transparent{% else %}#07111f{% endif %}; color:#ecf3ff; }
+    .shell { display:flex; flex-direction:column; height:100vh; background:#0d1728; border:{% if embedded %}1px solid rgba(148,163,184,0.16){% else %}0{% endif %}; border-radius:{% if embedded %}18px{% else %}0{% endif %}; overflow:hidden; }
+    .header { padding:16px 18px; border-bottom:1px solid rgba(148,163,184,0.14); background:#101c31; }
+    .title { font-weight:800; }
+    .subtitle { color:#9fb0ca; font-size:0.92rem; margin-top:4px; }
+    .messages { flex:1; overflow:auto; padding:16px; display:flex; flex-direction:column; gap:12px; background:#08101d; }
+    .bubble { max-width:88%; padding:12px 14px; border-radius:16px; white-space:pre-wrap; line-height:1.4; }
+    .bubble.user { align-self:flex-end; background:#224b3b; }
+    .bubble.assistant { align-self:flex-start; background:#15243a; }
+    .composer { padding:14px; border-top:1px solid rgba(148,163,184,0.14); background:#0d1728; }
+    textarea { width:100%; min-height:84px; box-sizing:border-box; border-radius:14px; border:1px solid rgba(148,163,184,0.16); background:#08101d; color:#ecf3ff; padding:12px; resize:vertical; }
+    .actions { margin-top:10px; display:flex; justify-content:space-between; gap:10px; align-items:center; }
+    .status { color:#9fb0ca; font-size:0.9rem; }
+    button { border:0; border-radius:12px; padding:10px 14px; background:linear-gradient(135deg, #5ea3ff, #7c5cff); color:#fff; font-weight:800; cursor:pointer; }
+    button[disabled] { opacity:0.7; cursor:not-allowed; }
+    .error { color:#ffb4b4; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="header">
+      <div class="title">{{ chat_widget_title }}</div>
+      <div class="subtitle">norms-app</div>
+    </div>
+    <div class="messages" id="messages">
+      <div class="bubble assistant">{{ chat_widget_welcome_message }}</div>
+    </div>
+    <form class="composer" id="chat-form">
+      <textarea id="message-input" placeholder="Ask a question..." {% if not chat_widget_enabled %}disabled{% endif %}></textarea>
+      <div class="actions">
+        <div class="status" id="status">{% if not chat_widget_enabled %}Widget is not configured yet.{% endif %}</div>
+        <button type="submit" id="send-button" {% if not chat_widget_enabled %}disabled{% endif %}>Send</button>
+      </div>
+    </form>
+  </div>
+  {{ chat_widget_chat_url|json_script:"chat-url" }}
+  <script>
+    (function () {
+      const form = document.getElementById('chat-form');
+      const input = document.getElementById('message-input');
+      const messages = document.getElementById('messages');
+      const status = document.getElementById('status');
+      const sendButton = document.getElementById('send-button');
+      const chatUrl = JSON.parse(document.getElementById('chat-url').textContent);
+      const history = [];
+      function addBubble(role, text) {
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble ' + role;
+        bubble.textContent = text;
+        messages.appendChild(bubble);
+        messages.scrollTop = messages.scrollHeight;
+      }
+      async function sendMessage(message) {
+        status.textContent = 'Thinking…';
+        status.classList.remove('error');
+        sendButton.disabled = true;
+        try {
+          const response = await fetch(chatUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message, history }),
+          });
+          const payload = await response.json();
+          if (!response.ok || !payload.ok) throw new Error(payload.error || 'Request failed.');
+          history.push({ role: 'user', content: message });
+          history.push({ role: 'assistant', content: payload.reply });
+          addBubble('assistant', payload.reply);
+          status.textContent = payload.provider + ' · ' + payload.model;
+        } catch (error) {
+          status.textContent = error.message || 'Something went wrong.';
+          status.classList.add('error');
+        } finally {
+          sendButton.disabled = false;
+        }
+      }
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        const message = input.value.trim();
+        if (!message) return;
+        addBubble('user', message);
+        input.value = '';
+        sendMessage(message);
+      });
+    })();
+  </script>
+</body>
+</html>

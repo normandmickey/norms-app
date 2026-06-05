@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Login · norms-app{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+  <h1>Login</h1>
+  <p class="subtitle">This starter is private by default.</p>
+  <form method="post" class="auth-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <label for="id_username">Username</label>
+    {{ form.username }}
+    {{ form.username.errors }}
+    <label for="id_password">Password</label>
+    {{ form.password }}
+    {{ form.password.errors }}
+    <button type="submit">Sign in</button>
+  </form>
+</div>
+{% endblock %}

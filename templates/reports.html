@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<div class="page-stack">
+  <section class="hero-card">
+    <span class="eyebrow">Reporting</span>
+    <h1>AI-assisted reports</h1>
+    <p class="subtitle">Generate constrained read-only report queries for this app, preview the results server-side, and export them without exposing provider keys in the browser.</p>
+  </section>
+
+  <section class="info-card">
+    <div class="section-heading">
+      <h2>Available data</h2>
+      <span class="pill">Allowlisted models</span>
+    </div>
+    {% if report_models %}
+    <div class="card-grid compact-grid">
+      {% for item in report_models %}
+      <article class="mini-card info-card">
+        <span class="eyebrow">{{ item.table }}</span>
+        <h3>{{ item.label }}</h3>
+        <p class="report-number">{{ item.total }}</p>
+        <p>{{ item.description }}</p>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="subtitle">No reportable models are available yet.</p>
+    {% endif %}
+  </section>
+
+  <section class="info-card">
+    <div class="section-heading">
+      <h2>AI report assistant</h2>
+      <span class="pill">Prompt → SQL → export</span>
+    </div>
+    {% if report_assistant_enabled %}
+    <form method="post" action="{% url "report_assistant" %}" class="standard-record-form resource-form">
+      {% csrf_token %}
+      <p>
+        <label for="report_prompt">Describe the report you want</label><br>
+        <textarea id="report_prompt" name="prompt" rows="4" style="width:100%;">{{ report_assistant_prompt }}</textarea>
+      </p>
+      <button type="submit">Generate report query</button>
+    </form>
+    <p class="helper-text">The assistant can only query allowlisted app tables and each result is capped at 200 rows.</p>
+    {% if report_assistant_error %}
+    <p class="subtitle" style="color:#ffb4b4;">{{ report_assistant_error }}</p>
+    {% endif %}
+    {% if report_assistant_result %}
+    <div class="hint" style="margin-top:14px;">
+      <strong>{{ report_assistant_result.title }}</strong>
+      {% if report_assistant_result.summary %}<div style="margin-top:6px;">{{ report_assistant_result.summary }}</div>{% endif %}
+      <div style="margin-top:6px;">{{ report_assistant_result.row_count }} rows · {{ report_assistant_result.provider }} · <code>{{ report_assistant_result.model }}</code></div>
+    </div>
+    <p style="margin-top:14px;"><strong>Generated SQL</strong></p>
+    <pre style="white-space:pre-wrap;overflow:auto;background:#08101d;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.12);color:#d7e4ff;">{{ report_assistant_result.sql }}</pre>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;">
+      <form method="post" action="{% url "report_assistant_export" %}">{% csrf_token %}<input type="hidden" name="prompt" value="{{ report_assistant_prompt }}"><input type="hidden" name="export_format" value="csv"><button type="submit" class="button secondary">Export CSV</button></form>
+      <form method="post" action="{% url "report_assistant_export" %}">{% csrf_token %}<input type="hidden" name="prompt" value="{{ report_assistant_prompt }}"><input type="hidden" name="export_format" value="xlsx"><button type="submit" class="button secondary">Export Excel</button></form>
+      <form method="post" action="{% url "report_assistant_export" %}">{% csrf_token %}<input type="hidden" name="prompt" value="{{ report_assistant_prompt }}"><input type="hidden" name="export_format" value="pdf"><button type="submit" class="button secondary">Export PDF</button></form>
+    </div>
+    {% if report_assistant_result.rows %}
+    <div class="standard-table-scroll table-scroll" style="margin-top:16px;">
+      <table class="standard-table resource-table">
+        <thead><tr>{% for column in report_assistant_result.columns %}<th>{{ column }}</th>{% endfor %}</tr></thead>
+        <tbody>
+          {% for row in report_assistant_result.rows %}
+          <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    {% endif %}
+    {% else %}
+    <p class="subtitle">Configure the app’s default AI provider/model/API key in SaaSClaw, redeploy, then this assistant can generate safe report queries.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
